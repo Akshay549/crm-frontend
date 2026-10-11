@@ -1,11 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import toast from "react-hot-toast";
 import {
   ArrowLeft,
-  Edit2,
-  Trash2,
   Mail,
   Phone,
   MapPin,
@@ -16,66 +15,57 @@ import {
   HomeIcon,
   Banknote,
 } from "lucide-react";
-import { useCRM } from "@/context/CRMContext";
-import LeadForm from "@/components/LeadForm";
-import {
-  formatBudget,
-  formatPhone,
-  statusClass,
-  statuses,
-  type Lead,
-  type LeadStatus,
-} from "@/lib/types";
-import Home from "@/app/page";
+import ErrorState from "@/components/ErrorState";
+import Skeleton from "@/components/Skeleton";
+import Spinner from "@/components/Spinner";
+import { useApi } from "@/hooks/useApi";
+import { addNote, getLead, getNotes, updateLeadStatus } from "@/services/leadService";
+import { toApiError } from "@/lib/api-error";
+import { formatBudget, formatPhone, statusClass, statuses, type LeadStatus } from "@/lib/types";
+
+const NOTE_MAX_LENGTH = 1000;
+
+function DetailSkeleton() {
+  return (
+    <main className="page">
+      <div className="page-heading">
+        <div>
+          <Skeleton width={220} height={28} />
+          <Skeleton width={180} height={13} style={{ marginTop: 10 }} />
+        </div>
+      </div>
+      <div className="detail-grid">
+        <section className="panel detail-panel" style={{ display: "grid", gap: 20 }}>
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} height={38} />
+          ))}
+        </section>
+        <aside className="panel detail-panel" style={{ display: "grid", gap: 14 }}>
+          <Skeleton width={150} height={18} />
+          <Skeleton height={85} />
+          <Skeleton width={100} height={30} />
+        </aside>
+      </div>
+    </main>
+  );
+}
 
 export default function LeadDetailPage() {
-  const params = useParams<{ id: string }>();
-  const router = useRouter();
-  const { leads, updateLead, addNote, deleteLead } = useCRM();
-  const lead = leads.find((l) => l.id === params.id);
+  const { id } = useParams<{ id: string }>();
+  const { data: leadRes, error, update: setLeadRes, reload } = useApi(() => getLead(id), [id]);
+  const {
+    data: notesRes,
+    error: notesError,
+    loading: notesLoading,
+    update: setNotesRes,
+    reload: reloadNotes,
+  } = useApi(() => getNotes(id), [id]);
+
   const [note, setNote] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [addingNote, setAddingNote] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  if (loading)
-    return (
-      <main className="page">
-        <div
-          className="panel"
-          style={{ padding: 24, display: "grid", gap: 12 }}
-        >
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              style={{ height: 38, background: "#f0f2f5", borderRadius: 5 }}
-            />
-          ))}
-        </div>
-      </main>
-    );
-
-  if (loadError)
-    return (
-      <main className="page">
-        <div className="panel error-box">
-          <h3>Couldn't load this lead</h3>
-          <button
-            className="btn"
-            onClick={() => {
-              setLoadError(false);
-              setLoading(true);
-              setTimeout(() => setLoading(false), 250);
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      </main>
-    );
-
-  if (!lead)
+  if (error?.status === 404)
     return (
       <main className="page">
         <div className="panel empty-state">
@@ -88,19 +78,50 @@ export default function LeadDetailPage() {
       </main>
     );
 
-  function save(data: any) {
-    if (
-      leads.some(
-        (l) =>
-          l.id !== lead?.id &&
-          l.phone.replace(/\D/g, "") ===
-            String(data.phone ?? lead?.phone).replace(/\D/g, ""),
-      )
-    )
-      return "This phone number already exists.";
-    updateLead(lead?.id, data);
-    setEditing(false);
-    return null;
+  if (error)
+    return (
+      <main className="page">
+        <div className="panel">
+          <ErrorState title="Couldn't load this lead" message={error.message} onRetry={reload} />
+        </div>
+      </main>
+    );
+
+  if (!leadRes) return <DetailSkeleton />;
+
+  const lead = leadRes.data.lead;
+  const notes = notesRes?.data.notes ?? [];
+
+  async function changeStatus(status: LeadStatus) {
+    setUpdatingStatus(true);
+    try {
+      const response = await updateLeadStatus(lead.id, status);
+      toast.success(response.message);
+      setLeadRes(response); // the response already holds the updated lead
+    } catch (err) {
+      toast.error(toApiError(err).message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
+  async function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    const text = note.trim();
+    if (!text || addingNote) return;
+
+    setAddingNote(true);
+    try {
+      const response = await addNote(lead.id, text);
+      toast.success(response.message);
+      setNote("");
+      if (notesRes) setNotesRes({ ...notesRes, data: { notes: [response.data.note, ...notes] } });
+      else reloadNotes();
+    } catch (err) {
+      toast.error(toApiError(err).message);
+    } finally {
+      setAddingNote(false);
+    }
   }
 
   return (
@@ -109,7 +130,7 @@ export default function LeadDetailPage() {
         <div>
           <h1>{lead.name}</h1>
           <div className="subtle">
-            {lead.id} · Added{" "}
+            {lead.leadId} · Added{" "}
             {new Date(lead.createdAt).toLocaleDateString("en-IN", {
               day: "numeric",
               month: "long",
@@ -132,10 +153,7 @@ export default function LeadDetailPage() {
           <div className="detail-fields">
             <div className="detail-item">
               <div className="label">
-                <Phone
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <Phone size={13} style={{ display: "inline", marginRight: 5 }} />
                 Phone number
               </div>
               <div className="value">{formatPhone(lead.phone)}</div>
@@ -151,10 +169,7 @@ export default function LeadDetailPage() {
 
             <div className="detail-item">
               <div className="label">
-                <Banknote
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <Banknote size={13} style={{ display: "inline", marginRight: 5 }} />
                 Budget
               </div>
               <div className="value" style={{ color: "#2253a3" }}>
@@ -164,10 +179,7 @@ export default function LeadDetailPage() {
 
             <div className="detail-item">
               <div className="label">
-                <MapPin
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <MapPin size={13} style={{ display: "inline", marginRight: 5 }} />
                 Preferred location
               </div>
               <div className="value">{lead.location}</div>
@@ -175,10 +187,7 @@ export default function LeadDetailPage() {
 
             <div className="detail-item">
               <div className="label">
-                <HomeIcon
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <HomeIcon size={13} style={{ display: "inline", marginRight: 5 }} />
                 Property type
               </div>
               <div className="value">{lead.propertyType}</div>
@@ -186,10 +195,7 @@ export default function LeadDetailPage() {
 
             <div className="detail-item">
               <div className="label">
-                <Globe
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <Globe size={13} style={{ display: "inline", marginRight: 5 }} />
                 Lead source
               </div>
               <div className="value">{lead.source}</div>
@@ -197,10 +203,7 @@ export default function LeadDetailPage() {
 
             <div className="detail-item">
               <div className="label">
-                <CalendarDays
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
+                <CalendarDays size={13} style={{ display: "inline", marginRight: 5 }} />
                 Created on
               </div>
               <div className="value">
@@ -214,20 +217,21 @@ export default function LeadDetailPage() {
           </div>
 
           <div className="status-row">
-            <label
-              htmlFor="status-change"
-              style={{ fontWeight: 650, fontSize: 12 }}
-            >
+            <label htmlFor="status-change" style={{ fontWeight: 650, fontSize: 12 }}>
               Update status
             </label>
+            {updatingStatus && (
+              <span style={{ marginLeft: "auto", display: "flex" }}>
+                <Spinner size={16} />
+              </span>
+            )}
             <select
               id="status-change"
               className="field-control"
-              style={{ marginLeft: "auto", minWidth: 145 }}
+              style={{ marginLeft: updatingStatus ? 0 : "auto", minWidth: 145 }}
               value={lead.status}
-              onChange={(e) =>
-                updateLead(lead.id, { status: e.target.value as LeadStatus })
-              }
+              disabled={updatingStatus}
+              onChange={(e) => changeStatus(e.target.value as LeadStatus)}
             >
               {statuses.map((s) => (
                 <option key={s}>{s}</option>
@@ -235,6 +239,7 @@ export default function LeadDetailPage() {
             </select>
           </div>
         </section>
+
         <aside className="panel detail-panel">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <MessageSquare size={17} />
@@ -243,15 +248,7 @@ export default function LeadDetailPage() {
           <p className="subtle" style={{ lineHeight: 2.6 }}>
             Keep a record of calls, preferences and site visits.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (note.trim()) {
-                addNote(lead.id, note.trim());
-                setNote("");
-              }
-            }}
-          >
+          <form onSubmit={handleAddNote}>
             <div className="form-field">
               <label htmlFor="note-input">Add a note</label>
               <textarea
@@ -260,19 +257,29 @@ export default function LeadDetailPage() {
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Write a call summary or next step…"
                 rows={3}
+                maxLength={NOTE_MAX_LENGTH}
+                disabled={addingNote}
               />
             </div>
             <button
               className="btn btn-primary"
               type="submit"
               style={{ marginTop: 9 }}
-              disabled={!note.trim()}
+              disabled={!note.trim() || addingNote}
             >
-              <Send size={14} /> Add note
+              {addingNote ? <Spinner /> : <Send size={14} />} {addingNote ? "Adding…" : "Add note"}
             </button>
           </form>
+
           <div className="notes-list">
-            {lead.notes.length === 0 ? (
+            {notesError ? (
+              <ErrorState title="Couldn't load notes" message={notesError.message} onRetry={reloadNotes} />
+            ) : notesLoading ? (
+              <div style={{ display: "grid", gap: 10 }}>
+                <Skeleton height={70} />
+                <Skeleton height={70} />
+              </div>
+            ) : notes.length === 0 ? (
               <div className="empty-state" style={{ padding: "25px 8px" }}>
                 <div className="empty-icon">
                   <MessageSquare size={17} />
@@ -281,7 +288,7 @@ export default function LeadDetailPage() {
                 <p>Add the first activity note above.</p>
               </div>
             ) : (
-              lead.notes.map((n) => (
+              notes.map((n) => (
                 <article className="note" key={n.id}>
                   <div className="note-time">
                     {new Date(n.createdAt).toLocaleString("en-IN", {
@@ -298,44 +305,6 @@ export default function LeadDetailPage() {
           </div>
         </aside>
       </div>
-
-      {editing && (
-        <LeadForm lead={lead} onClose={() => setEditing(false)} onSave={save} />
-      )}
-
-      {confirmDelete && (
-        <div className="overlay">
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            style={{ maxWidth: 420 }}
-          >
-            <div className="modal-head">
-              <h2>Delete this lead?</h2>
-            </div>
-            <div className="modal-body">
-              <p>
-                This lead and its notes will be removed from the demo workspace.
-              </p>
-            </div>
-            <div className="modal-foot">
-              <button className="btn" onClick={() => setConfirmDelete(false)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => {
-                  deleteLead(lead.id);
-                  router.push("/leads");
-                }}
-              >
-                Delete lead
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </main>
   );
 }

@@ -1,14 +1,14 @@
 import api from "@/lib/axios";
+import type { ApiResponse, AuthUser } from "@/lib/types";
 import type { LoginFormValues } from "@/lib/validations/auth";
-import type { AuthUser } from "@/lib/auth-storage";
 
-type LoginResponse = {
-  success: true;
-  message: string;
-  data: { user: AuthUser };
-};
+type UserData = { user: AuthUser };
 
-export async function login(values: LoginFormValues) {
-  const response = await api.post<LoginResponse>("/auth/login", values);
-  return response.data;
-}
+export const login = (values: LoginFormValues) =>
+  api.post<ApiResponse<UserData>>("/auth/login", values).then((res) => res.data);
+
+export const getMe = () =>
+  api.get<ApiResponse<UserData>>("/auth/me").then((res) => res.data);
+
+export const logout = () =>
+  api.post<ApiResponse>("/auth/logout").then((res) => res.data);

@@ -1,34 +1,37 @@
 import { isAxiosError } from "axios";
 
-// Shape of every error response from the backend
-type ApiErrorBody = {
-  success: false;
-  message: string;
-  errors?: { field: string; message: string }[];
-};
+export type FieldError = { field: string; message: string };
 
-export type ParsedApiError = {
+// Every failed API call reaches the UI as an ApiError, so pages handle errors one way
+export class ApiError extends Error {
   status?: number;
-  message: string;
-  fieldErrors: { field: string; message: string }[];
-};
+  fieldErrors: FieldError[];
 
-// Converts any thrown error into something the UI can show
-export function parseApiError(error: unknown): ParsedApiError {
-  if (isAxiosError<ApiErrorBody>(error)) {
-    // Server replied with an error status
-    if (error.response) {
-      return {
-        status: error.response.status,
-        message: error.response.data?.message ?? "Something went wrong.",
-        fieldErrors: error.response.data?.errors ?? [],
-      };
-    }
-    // No response: server down, CORS blocked, or timeout
-    return {
-      message: "Cannot reach the server. Please try again in a moment.",
-      fieldErrors: [],
-    };
+  constructor(message: string, status?: number, fieldErrors: FieldError[] = []) {
+    super(message);
+    this.status = status;
+    this.fieldErrors = fieldErrors;
   }
-  return { message: "Something went wrong.", fieldErrors: [] };
+}
+
+type ErrorBody = { message?: string; errors?: FieldError[] };
+
+export function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+
+  if (isAxiosError<ErrorBody>(error)) {
+    // The server replied with an error status
+    if (error.response) {
+      const { data, status } = error.response;
+      return new ApiError(data?.message ?? "Something went wrong.", status, data?.errors ?? []);
+    }
+    // No reply: server down, CORS blocked or timeout
+    return new ApiError(
+      error.code === "ECONNABORTED"
+        ? "The request timed out. Please try again."
+        : "Cannot reach the server. Please try again in a moment.",
+    );
+  }
+
+  return new ApiError("Something went wrong.");
 }
