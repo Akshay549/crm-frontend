@@ -70,7 +70,7 @@ export default function DashboardPage() {
     <main className="page">
       <div className="page-heading">
         <div>
-          <h1>Dashboard</h1>
+          <h1>Dashboard ddd</h1>
           <div className="subtle">
             A quick view of your real estate sales pipeline.
           </div>
