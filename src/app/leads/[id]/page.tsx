@@ -88,7 +88,7 @@ export default function LeadDetailPage() {
       </main>
     );
 
-  function save(data: Parameters<typeof updateLead>[1]) {
+  function save(data: any) {
     if (
       leads.some(
         (l) =>

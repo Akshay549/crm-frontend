@@ -6,7 +6,7 @@ import type { Lead, LeadNote } from "@/lib/types";
 type CRMContextType = {
   leads: Lead[];
   addLead: (lead: Omit<Lead, "id" | "createdAt" | "notes">) => string | null;
-  updateLead: (id: string, changes: Partial<Lead>) => void;
+  updateLead: (id: string|undefined|any, changes: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
   addNote: (id: string, text: string) => void;
 };

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -23,7 +23,7 @@ import {
   type Lead,
 } from "@/lib/types";
 
-export default function LeadsPage() {
+function LeadsContent() {
   const { leads, addLead, updateLead, deleteLead } = useCRM();
   const router = useRouter();
   const pathname = usePathname();
@@ -402,5 +402,21 @@ export default function LeadsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="page">
+          <div className="panel" style={{ padding: 24 }}>
+            Loading leads...
+          </div>
+        </main>
+      }
+    >
+      <LeadsContent />
+    </Suspense>
   );
 }
