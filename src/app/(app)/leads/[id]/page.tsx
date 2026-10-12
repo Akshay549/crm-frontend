@@ -8,7 +8,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  CalendarDays,
   MessageSquare,
   Send,
   Globe,
@@ -36,6 +35,29 @@ import {
 
 const NOTE_MAX_LENGTH = 1000;
 
+/** Label + value pair used in the info card. */
+function InfoItem({
+  icon: Icon,
+  label,
+  children,
+  className = "",
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`detail-item ${className}`}>
+      <div className="label">
+        <Icon size={13} />
+        {label}
+      </div>
+      <div className="value">{children}</div>
+    </div>
+  );
+}
+
 function DetailSkeleton() {
   return (
     <main className="page">
@@ -48,30 +70,19 @@ function DetailSkeleton() {
       <div className="detail-grid">
         <section
           className="panel detail-panel"
-          style={{ display: "grid", gap: 20 }}
+          style={{ display: "grid", gap: 16 }}
         >
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} height={38} />
-          ))}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Skeleton width={90} height={14} />
-            <Skeleton width={145} height={36} radius={6} />
-          </div>
+          <Skeleton height={28} />
+          <Skeleton height={74} radius={7} />
+          <Skeleton height={44} />
         </section>
         <aside
           className="panel detail-panel"
-          style={{ display: "grid", gap: 14 }}
+          style={{ display: "grid", gap: 12 }}
         >
           <Skeleton width={150} height={18} />
-          <Skeleton height={85} radius={6} />
-          <Skeleton width={104} height={36} radius={6} />
-          <Skeleton height={70} radius={6} />
+          <Skeleton height={64} radius={6} />
+          <Skeleton height={44} radius={6} />
         </aside>
       </div>
     </main>
@@ -169,7 +180,10 @@ export default function LeadDetailPage() {
     <main className="page">
       <div className="page-heading">
         <div>
-          <h1>{lead.name}</h1>
+          <h1>
+            {lead.name}
+            <span className={statusClass(lead.status)}>{lead.status}</span>
+          </h1>
           <div className="subtle">
             {lead.leadId} · Added{" "}
             {new Date(lead.createdAt).toLocaleDateString("en-IN", {
@@ -179,183 +193,127 @@ export default function LeadDetailPage() {
             })}
           </div>
         </div>
+
+        <div className="page-heading-actions">
+          {lead.email && (
+            <a className="btn" href={`mailto:${lead.email}`}>
+              <Mail size={14} /> Email
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="detail-grid">
+        {/* ───────── Lead information ───────── */}
         <section className="panel detail-panel">
           <div className="detail-title">
             <div>
               <h2>Lead information</h2>
-              <div className="subtle">Contact and property preferences</div>
-            </div>
-            <span className={statusClass(lead.status)}>{lead.status}</span>
-          </div>
-
-          <div className="detail-fields">
-            <div className="detail-item">
-              <div className="label">
-                <Phone
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Phone number
-              </div>
-              <div className="value">{formatPhone(lead.phone)}</div>
+              <div className="subtle">Property requirements and contact</div>
             </div>
 
-            <div className="detail-item">
-              <div className="label">
-                <Mail size={13} style={{ display: "inline", marginRight: 5 }} />
-                Email address
-              </div>
-              <div className="value">{lead.email || "Not provided"}</div>
-            </div>
-
-            <div className="detail-item">
-              <div className="label">
-                <Banknote
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Budget
-              </div>
-              <div className="value" style={{ color: "#2253a3" }}>
-                {formatBudget(lead.budget)}
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="label">
-                <MapPin
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Preferred location
-              </div>
-              <div className="value">{lead.location}</div>
-            </div>
-
-            <div className="detail-item">
-              <div className="label">
-                <HomeIcon
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Property type
-              </div>
-              <div className="value">{lead.propertyType}</div>
-            </div>
-
-            <div className="detail-item">
-              <div className="label">
-                <Globe
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Lead source
-              </div>
-              <div className="value">{lead.source}</div>
-            </div>
-
-            <div className="detail-item">
-              <div className="label">
-                <CalendarDays
-                  size={13}
-                  style={{ display: "inline", marginRight: 5 }}
-                />
-                Created on
-              </div>
-              <div className="value">
-                {new Date(lead.createdAt).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </div>
+            <div className="status-control">
+              <label htmlFor="status-change">Status</label>
+              {updatingStatus && <Spinner size={16} />}
+              <select
+                id="status-change"
+                className="field-control"
+                value={lead.status}
+                disabled={updatingStatus}
+                onChange={(e) => changeStatus(e.target.value as LeadStatus)}
+              >
+                {statuses.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="status-row">
-            <label
-              htmlFor="status-change"
-              style={{ fontWeight: 650, fontSize: 12 }}
-            >
-              Update status
-            </label>
-            {updatingStatus && (
-              <span style={{ marginLeft: "auto", display: "flex" }}>
-                <Spinner size={16} />
-              </span>
-            )}
-            <select
-              id="status-change"
-              className="field-control"
-              style={{ marginLeft: updatingStatus ? 0 : "auto", minWidth: 145 }}
-              value={lead.status}
-              disabled={updatingStatus}
-              onChange={(e) => changeStatus(e.target.value as LeadStatus)}
-            >
-              {statuses.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
+          <div className="kpi-strip">
+            <InfoItem icon={Banknote} label="Budget" className="kpi accent">
+              {formatBudget(lead.budget)}
+            </InfoItem>
+            <InfoItem icon={HomeIcon} label="Property type" className="kpi">
+              {lead.propertyType}
+            </InfoItem>
+            <InfoItem icon={MapPin} label="Preferred location" className="kpi">
+              {lead.location}
+            </InfoItem>
+          </div>
+
+          <div className="kpi-strip">
+            <InfoItem icon={Phone} label="Phone number" className="kpi">
+              {lead.phone}
+            </InfoItem>
+            <InfoItem icon={Mail} label="Email address" className="kpi">
+              {lead.email || <span className="subtle">Not provided</span>}
+            </InfoItem>
+            <InfoItem icon={Globe} label="Lead source" className="kpi">
+              {lead.source}
+            </InfoItem>
           </div>
         </section>
 
+        {/* ───────── Notes & activity ───────── */}
         <aside className="panel detail-panel">
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <MessageSquare size={17} />
-            <h2 style={{ margin: 0, fontSize: 15 }}>Notes & activity</h2>
+          <div className="notes-head">
+            <MessageSquare size={16} />
+            <h2>Notes &amp; activity</h2>
+            {notes.length > 0 && (
+              <span className="count-pill">{notes.length}</span>
+            )}
           </div>
-          <p className="subtle" style={{ lineHeight: 2.6 }}>
-            Keep a record of calls, preferences and site visits.
-          </p>
-          <form onSubmit={handleAddNote}>
-            <div className="form-field">
-              <label htmlFor="note-input">Add a note</label>
-              <textarea
-                id="note-input"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Write a call summary or next step…"
-                rows={3}
-                maxLength={NOTE_MAX_LENGTH}
-                disabled={addingNote}
-              />
+
+          <form className="note-form" onSubmit={handleAddNote}>
+            <label htmlFor="note-input" className="sr-only">
+              Add a note
+            </label>
+            <textarea
+              id="note-input"
+              className="field-control"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Log a call, preference or next step…"
+              rows={2}
+              maxLength={NOTE_MAX_LENGTH}
+              disabled={addingNote}
+            />
+            <div className="note-form-foot">
+              <span className="char-count">
+                {note.length > 0 && `${note.length}/${NOTE_MAX_LENGTH}`}
+              </span>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={!note.trim() || addingNote}
+              >
+                {addingNote ? <Spinner /> : <Send size={14} />}
+                {addingNote ? "Adding…" : "Add note"}
+              </button>
             </div>
-            <button
-              className="btn btn-primary"
-              type="submit"
-              style={{ marginTop: 9 }}
-              disabled={!note.trim() || addingNote}
-            >
-              {addingNote ? <Spinner /> : <Send size={14} />}{" "}
-              {addingNote ? "Adding…" : "Add note"}
-            </button>
           </form>
 
-          <div className="notes-list">
-            {notesError ? (
+          {notesError ? (
+            <div className="notes-list">
               <ErrorState
                 title="Couldn't load notes"
                 message={notesError.message}
                 onRetry={reloadNotes}
               />
-            ) : notesLoading ? (
-              <div style={{ display: "grid", gap: 10 }}>
-                <Skeleton height={70} />
-                <Skeleton height={70} />
-              </div>
-            ) : notes.length === 0 ? (
-              <div className="empty-state" style={{ padding: "25px 8px" }}>
-                <div className="empty-icon">
-                  <MessageSquare size={17} />
-                </div>
-                <h3>No notes yet</h3>
-                <p>Add the first activity note above.</p>
-              </div>
-            ) : (
-              notes.map((n) => (
+            </div>
+          ) : notesLoading ? (
+            <div className="notes-list">
+              <Skeleton height={56} />
+              <Skeleton height={56} />
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="notes-empty">
+              <MessageSquare size={16} />
+              <span>No notes yet. Your first note will appear here.</span>
+            </div>
+          ) : (
+            <div className="notes-list">
+              {notes.map((n) => (
                 <article className="note" key={n.id}>
                   <div className="note-time">
                     {new Date(n.createdAt).toLocaleString("en-IN", {
@@ -367,9 +325,9 @@ export default function LeadDetailPage() {
                   </div>
                   <div className="note-text">{n.text}</div>
                 </article>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </aside>
       </div>
     </main>
