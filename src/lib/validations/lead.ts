@@ -8,8 +8,6 @@ import {
   type PropertyType,
 } from "@/lib/types";
 
-// Same rules as the backend, so users get instant feedback.
-// The form keeps phone and budget as text; they are converted when sending.
 export const leadSchema = z.object({
   name: z
     .string()
@@ -21,11 +19,17 @@ export const leadSchema = z.object({
     .string()
     .trim()
     .min(1, "Phone number is required")
-    .refine((v) => v.replace(/\D/g, "").length === 10, "Phone number must be 10 digits"),
+    .refine(
+      (v) => v.replace(/\D/g, "").length === 10,
+      "Phone number must be 10 digits",
+    ),
   email: z
     .string()
     .trim()
-    .refine((v) => v === "" || z.string().email().safeParse(v).success, "Enter a valid email address"),
+    .refine(
+      (v) => v === "" || z.string().email().safeParse(v).success,
+      "Enter a valid email address",
+    ),
   budget: z
     .string()
     .trim()

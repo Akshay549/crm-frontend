@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import "./ui-states.css";
-import AppShell from "@/components/AppShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AppShell>{children}</AppShell>
+        {children}
         <Toaster position="top-right" />
       </body>
     </html>

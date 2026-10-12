@@ -2,12 +2,15 @@ import { isAxiosError } from "axios";
 
 export type FieldError = { field: string; message: string };
 
-// Every failed API call reaches the UI as an ApiError, so pages handle errors one way
 export class ApiError extends Error {
   status?: number;
   fieldErrors: FieldError[];
 
-  constructor(message: string, status?: number, fieldErrors: FieldError[] = []) {
+  constructor(
+    message: string,
+    status?: number,
+    fieldErrors: FieldError[] = [],
+  ) {
     super(message);
     this.status = status;
     this.fieldErrors = fieldErrors;
@@ -20,12 +23,14 @@ export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error;
 
   if (isAxiosError<ErrorBody>(error)) {
-    // The server replied with an error status
     if (error.response) {
       const { data, status } = error.response;
-      return new ApiError(data?.message ?? "Something went wrong.", status, data?.errors ?? []);
+      return new ApiError(
+        data?.message ?? "Something went wrong.",
+        status,
+        data?.errors ?? [],
+      );
     }
-    // No reply: server down, CORS blocked or timeout
     return new ApiError(
       error.code === "ECONNABORTED"
         ? "The request timed out. Please try again."

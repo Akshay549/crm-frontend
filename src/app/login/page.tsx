@@ -35,14 +35,12 @@ export default function LoginPage() {
     } catch (error) {
       const { message, fieldErrors } = toApiError(error);
 
-      // Backend validation errors -> show under the matching field
       fieldErrors.forEach(({ field, message }) => {
         if (field === "email" || field === "password") {
           setError(field, { message });
         }
       });
 
-      // 401, network error, etc. -> show above the button
       if (fieldErrors.length === 0) setFormError(message);
     }
   }

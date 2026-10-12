@@ -7,7 +7,12 @@ type ErrorStateProps = {
   className?: string;
 };
 
-export default function ErrorState({ title, message, onRetry, className = "" }: ErrorStateProps) {
+export default function ErrorState({
+  title,
+  message,
+  onRetry,
+  className = "",
+}: ErrorStateProps) {
   return (
     <div className={`error-box ${className}`} role="alert">
       <h3>{title}</h3>

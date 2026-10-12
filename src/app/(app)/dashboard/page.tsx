@@ -32,10 +32,26 @@ const statusColors: Record<string, string> = {
 
 const recentHeaders = ["Lead", "Location", "Budget", "Status", "Created"];
 
-function StatCard({ label, value, foot, icon }: { label: string; value: string | number; foot: string; icon: ReactNode }) {
+function StatCard({
+  label,
+  value,
+  foot,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  foot: string;
+  icon: ReactNode;
+}) {
   return (
     <div className="panel stat">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div className="stat-label">{label}</div>
         {icon}
       </div>
@@ -60,22 +76,33 @@ export default function DashboardPage() {
   const stats = res?.data; // null while loading or after an error
 
   const sourceData = stats?.leadsBySource.filter((s) => s.count > 0) ?? [];
+  const loading = !stats && !error;
 
   return (
     <main className="page">
       <div className="page-heading">
         <div>
           <h1>Dashboard</h1>
-          <div className="subtle">A quick view of your real estate sales pipeline.</div>
+          <div className="subtle">
+            A quick view of your real estate sales pipeline.
+          </div>
         </div>
-        <Link href="/leads" className="btn btn-small">
-          View all leads <ArrowUpRight size={15} />
-        </Link>
+        {loading ? (
+          <Skeleton width={128} height={34} radius={6} />
+        ) : (
+          <Link href="/leads" className="btn btn-small">
+            View all leads <ArrowUpRight size={15} />
+          </Link>
+        )}
       </div>
 
       {error ? (
         <div className="panel">
-          <ErrorState title="Couldn't load the dashboard" message={error.message} onRetry={reload} />
+          <ErrorState
+            title="Couldn't load the dashboard"
+            message={error.message}
+            onRetry={reload}
+          />
         </div>
       ) : (
         <>
@@ -84,10 +111,30 @@ export default function DashboardPage() {
               Array.from({ length: 4 }, (_, i) => <StatCardSkeleton key={i} />)
             ) : (
               <>
-                <StatCard label="Total leads" value={stats.totalLeads} foot="All captured enquiries" icon={<Users size={17} color="#2253a3" />} />
-                <StatCard label="Closed deals" value={stats.closedDeals} foot="Marked as successfully sold" icon={<CheckCircle2 size={17} color="#16805d" />} />
-                <StatCard label="Conversion rate" value={`${stats.conversionRate}%`} foot="Closed deals ÷ total leads" icon={<TrendingUp size={17} color="#16805d" />} />
-                <StatCard label="Site visits" value={stats.siteVisits} foot="Leads at visit stage" icon={<CalendarClock size={17} color="#8064c9" />} />
+                <StatCard
+                  label="Total leads"
+                  value={stats.totalLeads}
+                  foot="All captured enquiries"
+                  icon={<Users size={17} color="#2253a3" />}
+                />
+                <StatCard
+                  label="Closed deals"
+                  value={stats.closedDeals}
+                  foot="Marked as successfully sold"
+                  icon={<CheckCircle2 size={17} color="#16805d" />}
+                />
+                <StatCard
+                  label="Conversion rate"
+                  value={`${stats.conversionRate}%`}
+                  foot="Closed deals ÷ total leads"
+                  icon={<TrendingUp size={17} color="#16805d" />}
+                />
+                <StatCard
+                  label="Site visits"
+                  value={stats.siteVisits}
+                  foot="Leads at visit stage"
+                  icon={<CalendarClock size={17} color="#8064c9" />}
+                />
               </>
             )}
           </div>
@@ -104,15 +151,42 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={sourceData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e9edf3" />
-                    <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#667085" }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#667085" }} axisLine={false} tickLine={false} />
+                  <BarChart
+                    data={sourceData}
+                    margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#e9edf3"
+                    />
+                    <XAxis
+                      dataKey="source"
+                      tick={{ fontSize: 11, fill: "#667085" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 11, fill: "#667085" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip
                       cursor={{ fill: "#f5f7fa" }}
-                      contentStyle={{ border: "1px solid #e3e7ee", borderRadius: 6, fontSize: 12 }}
+                      contentStyle={{
+                        border: "1px solid #e3e7ee",
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
                     />
-                    <Bar dataKey="count" name="Leads" fill="#2253a3" radius={[3, 3, 0, 0]} maxBarSize={38} />
+                    <Bar
+                      dataKey="count"
+                      name="Leads"
+                      fill="#2253a3"
+                      radius={[3, 3, 0, 0]}
+                      maxBarSize={38}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -132,7 +206,9 @@ export default function DashboardPage() {
                   <div
                     className="segment-bar"
                     role="img"
-                    aria-label={stats.statusDistribution.map((s) => `${s.status}: ${s.count}`).join(", ")}
+                    aria-label={stats.statusDistribution
+                      .map((s) => `${s.status}: ${s.count}`)
+                      .join(", ")}
                   >
                     {stats.statusDistribution.map((s) => (
                       <div
@@ -150,12 +226,23 @@ export default function DashboardPage() {
                     {stats.statusDistribution.map((s) => (
                       <div className="legend-row" key={s.status}>
                         <span className="legend-label">
-                          <span className="dot" style={{ background: statusColors[s.status] }} />
+                          <span
+                            className="dot"
+                            style={{ background: statusColors[s.status] }}
+                          />
                           {s.status}
                         </span>
-                        <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
                           {s.count}
-                          <span className="subtle" style={{ marginLeft: 8, fontWeight: 400 }}>
+                          <span
+                            className="subtle"
+                            style={{ marginLeft: 8, fontWeight: 400 }}
+                          >
                             {s.percentage}%
                           </span>
                         </span>
@@ -181,7 +268,11 @@ export default function DashboardPage() {
             </div>
 
             {!stats ? (
-              <TableSkeleton headers={recentHeaders} rows={5} className="custom_border" />
+              <TableSkeleton
+                headers={recentHeaders}
+                rows={5}
+                className="custom_border"
+              />
             ) : stats.recentLeads.length === 0 ? (
               <div className="empty-state">
                 <h3>No leads yet</h3>
@@ -207,14 +298,19 @@ export default function DashboardPage() {
                           <Link className="lead-name" href={`/leads/${l.id}`}>
                             {l.name}
                           </Link>
-                          <div className="subtle" style={{ fontSize: 11, marginTop: 3 }}>
+                          <div
+                            className="subtle"
+                            style={{ fontSize: 11, marginTop: 3 }}
+                          >
                             {formatPhone(l.phone)}
                           </div>
                         </td>
                         <td>{l.location}</td>
                         <td className="money">{formatBudget(l.budget)}</td>
                         <td>
-                          <span className={statusClass(l.status)}>{l.status}</span>
+                          <span className={statusClass(l.status)}>
+                            {l.status}
+                          </span>
                         </td>
                         <td>
                           {new Date(l.createdAt).toLocaleDateString("en-IN", {

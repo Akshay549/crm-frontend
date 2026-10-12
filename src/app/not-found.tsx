@@ -1,21 +1,7 @@
-"use client";
-
 import Link from "next/link";
 import { Home } from "lucide-react";
-import { useEffect } from "react";
-import { useStandalonePage } from "@/components/AppShell";
 
 export default function NotFound() {
-  const setStandalone = useStandalonePage();
-
-  useEffect(() => {
-    setStandalone?.(true);
-
-    return () => {
-      setStandalone?.(false);
-    };
-  }, [setStandalone]);
-
   return (
     <main className="login-screen" style={{ gridTemplateColumns: "1fr" }}>
       <section

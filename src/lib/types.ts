@@ -1,20 +1,10 @@
 export type LeadStatus = "New" | "Contacted" | "Site Visit" | "Closed";
 
 export type LeadSource =
-  | "Facebook"
-  | "Google"
-  | "Referral"
-  | "Walk-in"
-  | "Website"
-  | "Other";
+  "Facebook" | "Google" | "Referral" | "Walk-in" | "Website" | "Other";
 
 export type PropertyType =
-  | "1 BHK"
-  | "2 BHK"
-  | "3 BHK"
-  | "4+ BHK"
-  | "Plot"
-  | "Commercial";
+  "1 BHK" | "2 BHK" | "3 BHK" | "4+ BHK" | "Plot" | "Commercial";
 
 export type LeadNote = {
   id: string;
@@ -38,12 +28,15 @@ export type Lead = {
   updatedAt: string;
 };
 
-// What the lead form sends to the API
 export type LeadInput = Omit<Lead, "id" | "leadId" | "createdAt" | "updatedAt">;
 
-export type AuthUser = { id: string; name: string; email: string; role: string };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+};
 
-// Shape of every successful API response
 export type ApiResponse<T = null> = { success: true; message: string; data: T };
 
 export type Pagination = {
@@ -59,7 +52,11 @@ export type DashboardStats = {
   siteVisits: number;
   conversionRate: number;
   leadsBySource: { source: LeadSource; count: number }[];
-  statusDistribution: { status: LeadStatus; count: number; percentage: number }[];
+  statusDistribution: {
+    status: LeadStatus;
+    count: number;
+    percentage: number;
+  }[];
   recentLeads: Lead[];
 };
 

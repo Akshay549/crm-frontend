@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// Same rules as the backend, so users get instant feedback.
-// The backend still validates everything again.
 export const loginSchema = z.object({
   email: z
     .string()
