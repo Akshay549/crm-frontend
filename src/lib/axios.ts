@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { toApiError } from "./api-error";
 
 const api = axios.create({
-  baseURL: "https://crm-backend-blush-one.vercel.app", //intentionally harcoded by me.
+  baseURL: "/api",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
@@ -15,7 +15,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const apiError = toApiError(error);
-    // a wrong password on the login form is not an expired session
     const isLoginRequest = error.config?.url === "/auth/login";
 
     if (apiError.status === 401 && !isLoginRequest && !redirecting) {

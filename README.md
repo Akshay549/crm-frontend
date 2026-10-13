@@ -39,7 +39,7 @@ A mini CRM for real estate sales teams. Capture leads, track them through the pi
 | Leads | `/leads` | Lead table with search, filters, sorting, pagination, and add/edit/delete |
 | Lead details | `/leads/[id]` | Full lead info, status update and notes |
 
-**How it talks to the backend:** a single Axios instance (`src/lib/axios.ts`) with `withCredentials: true` so the session cookie is sent automatically. API calls live in `src/services/`, and a small helper (`src/lib/api-error.ts`) turns backend errors into messages for the forms.
+**How it talks to the backend:** a single Axios instance (`src/lib/axios.ts`) sends every request to `/api/*` on the frontend's own domain, and a Next.js rewrite (`next.config.ts`) forwards it to the backend. The session cookie is therefore first-party and works in every browser, including private windows and Safari. API calls live in `src/services/`, and a small helper (`src/lib/api-error.ts`) turns backend errors into messages for the forms.
 
 ---
 
@@ -159,13 +159,13 @@ cp .env.example .env.local
 
 | Variable | Description | Example |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | Backend base URL | `http://localhost:5000` |
+| `BACKEND_URL` | Backend address that `/api/*` is forwarded to (server side only) | `http://localhost:5000` |
 
 ```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** and log in with `demo@estateflow.in` / `demo1234`. Use `localhost`, not `127.0.0.1`, so the cookie and CORS work.
+Open **http://localhost:3000** and log in with `demo@estateflow.in` / `demo1234`. Use `localhost` consistently, not `127.0.0.1`.
 
 ### Scripts
 
@@ -189,8 +189,8 @@ Open **http://localhost:3000** and log in with `demo@estateflow.in` / `demo1234`
 Both apps are deployed as separate Vercel projects.
 
 - **Backend:** `vercel.json` routes all requests to `api/index.ts`, which runs the Express app. Environment variables: `MONGODB_CONNECTION_STRING`, `CLIENT_URL` (the frontend URL, without a trailing slash) and `NODE_ENV=production`. MongoDB Atlas must allow connections from Vercel (Network Access `0.0.0.0/0`).
-- **Frontend:** environment variable `NEXT_PUBLIC_API_URL` set to the backend URL.
-- In production the session cookie uses `SameSite=None; Secure` because the frontend and API are on different domains.
+- **Frontend:** environment variable `BACKEND_URL` set to the backend URL (for example `https://your-backend.vercel.app`). Redeploy the frontend after changing it, because it is read at build time.
+- The browser only talks to the frontend domain (`/api/*` is rewritten to the backend), so the session cookie is first-party (`HttpOnly; Secure; SameSite=Lax`) and is not blocked as a third-party cookie.
 
 ---
 
